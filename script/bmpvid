@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+command="$1"; shift
+pipeline="$1"
+if [ -z "$pipeline" ]
+  then pipeline="videoconvert ! autovideosink"
+fi
+
+(
+  set -e
+  i=0
+  while [ -z "$COUNT" ] || [ "$i" -lt "$COUNT" ]
+  do
+    i=$((i + 1))
+    (
+      eval "$command"
+    ) | gst-launch-1.0 -q fdsrc fd=0 ! gdkpixbufdec ! gdppay ! fdsink fd=5
+  done
+)  5>&1 1>&2 | gst-launch-1.0 -q fdsrc fd=0 ! gdpdepay ! $pipeline

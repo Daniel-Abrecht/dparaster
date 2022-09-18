@@ -1,0 +1,9 @@
+*.bmp
+*.o
+*.a
+*.so
+.so.*
+lib/
+bin/
+build/
+

@@ -41,7 +41,7 @@ CFLAGS  += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 endif
 
-LDLIBS_BIN += -Llib/$(TYPE)/ -l$(SONAME)
+LDLIBS_BIN += -Wl,--no-as-needed -Llib/$(TYPE)/ -l$(SONAME)
 LDLIBS += -lm
 
 OBJECTS := $(patsubst %,build/$(TYPE)/o/%.o,$(SOURCES))
@@ -49,6 +49,7 @@ OBJECTS := $(patsubst %,build/$(TYPE)/o/%.o,$(SOURCES))
 .PHONY: all clean get-bin get-lib install uninstall shell test
 
 all: bin/$(TYPE)/rasterizer \
+     bin/$(TYPE)/bmpinfo \
      lib/$(TYPE)/lib$(SONAME).a \
      lib/$(TYPE)/lib$(SONAME).so
 
@@ -99,5 +100,19 @@ shell:
 	  "$$SHELL"
 
 speed ?= 50
-demo:
+demo: \
+  bin/$(TYPE)/rasterizer \
+  bin/$(TYPE)/bmpinfo
 	./script/bmpvid './bin/release/rasterizer -y $$(echo "$$(date +%s.%N) * $(speed)" | bc -l) -'
+
+demo-video: bin/$(TYPE)/cube.webm bin/$(TYPE)/cube.mp4
+
+bin/$(TYPE)/cube.webm: \
+  bin/$(TYPE)/rasterizer \
+  bin/$(TYPE)/bmpinfo
+	COUNT=360 ./script/bmpvid './bin/release/rasterizer -y $$i -' 'videoconvert ! vp9enc ! webmmux ! filesink location=$@'
+
+bin/$(TYPE)/cube.mp4: \
+  bin/$(TYPE)/rasterizer \
+  bin/$(TYPE)/bmpinfo
+	COUNT=360 ./script/bmpvid './bin/release/rasterizer -y $$i -' 'videoconvert ! x264enc ! mp4mux ! filesink location=$@'

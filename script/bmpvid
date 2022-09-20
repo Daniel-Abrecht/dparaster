@@ -1,20 +1,37 @@
 #!/bin/bash
 set -e
 
+PATH="$(realpath "$(dirname "$0")/../bin/release/"):$PATH"
+
 command="$1"; shift
 pipeline="$1"
 if [ -z "$pipeline" ]
-  then pipeline="videoconvert ! autovideosink"
+  then pipeline="videoconvert ! autovideosink sync=false"
 fi
 
 (
   set -e
   i=0
+  first=1
   while [ -z "$COUNT" ] || [ "$i" -lt "$COUNT" ]
   do
-    i=$((i + 1))
     (
       eval "$command"
-    ) | gst-launch-1.0 -q fdsrc fd=0 ! gdkpixbufdec ! gdppay ! fdsink fd=5
+    ) | (
+      # Keep only the first bmp header, strip the other ones
+      if [ -n "$first" ]
+        then export $(bmpinfo --dump-input)
+        else export $(bmpinfo)
+      fi
+      dd status=none iflag=count_bytes,fullblock count=$cmp_image_data_size
+    ) 9>&1
+    i=$((i + 1))
+    first=
   done
-)  5>&1 1>&2 | gst-launch-1.0 -q fdsrc fd=0 ! gdpdepay ! $pipeline
+) | (
+  export $(bmpinfo)
+  gst-launch-1.0 -q -e fdsrc \
+   ! rawvideoparse width="$hdr_width" height="$hdr_height" format="GST_VIDEO_FORMAT_$cmp_gformat" framerate=60/1 \
+   ! videoflip method=vertical-flip \
+   ! $pipeline
+)

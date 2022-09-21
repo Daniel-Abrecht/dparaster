@@ -26,6 +26,8 @@ CFLAGS  += -fsanitize=address
 LDFLAGS += -fsanitize=address
 endif
 
+export TYPE
+
 ifndef dynamic
 LDFLAGS_BIN += -static
 endif
@@ -103,16 +105,24 @@ speed ?= 50
 demo: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
-	./script/bmpvid './bin/release/rasterizer -y $$(echo "$$(date +%s.%N) * $(speed)" | bc -l) -'
+	./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$(echo "$$(date +%s.%N) * $(speed)" | bc -l) -'
 
-demo-video: bin/$(TYPE)/cube.webm bin/$(TYPE)/cube.mp4
+demo-video: \
+  bin/$(TYPE)/cube.webm \
+  bin/$(TYPE)/cube.png \
+  bin/$(TYPE)/cube.mp4 \
 
 bin/$(TYPE)/cube.webm: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
-	COUNT=360 ./script/bmpvid './bin/release/rasterizer -y $$i -' 'videoconvert ! vp9enc ! webmmux ! filesink location=$@'
+	COUNT=360 ./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$i -' 'videoconvert ! vp9enc ! webmmux ! filesink location=$@'
 
 bin/$(TYPE)/cube.mp4: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
-	COUNT=360 ./script/bmpvid './bin/release/rasterizer -y $$i -' 'videoconvert ! x264enc ! mp4mux ! filesink location=$@'
+	COUNT=360 ./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$i -' 'videoconvert ! x264enc ! mp4mux ! filesink location=$@'
+
+bin/$(TYPE)/cube.png: \
+  bin/$(TYPE)/rasterizer \
+  bin/$(TYPE)/bmpinfo
+	COUNT=360 ./script/bmpvid --ffmpeg 'bin/$(TYPE)/rasterizer -y $$i -' '-y -f apng -plays 0 $@'

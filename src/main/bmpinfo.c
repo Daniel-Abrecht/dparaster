@@ -134,14 +134,14 @@ int main(int argc, char* argv[]){
   }
 
   const char bgformat[5] = { buf[30], buf[31], buf[32], buf[33], 0 };
-  bool gformat_ascii = bgformat[0] >= 0x20 && bgformat[0] < 127
+  bool fourcc_ascii = bgformat[0] >= 0x20 && bgformat[0] < 127
                    && bgformat[1] >= 0x20 && bgformat[1] < 127
                    && bgformat[2] >= 0x20 && bgformat[2] < 127
                    && bgformat[3] >= 0x20 && bgformat[3] < 127;
-  const char* gformat = gformat_ascii ? bgformat : 0;
+  const char* fourcc = fourcc_ascii ? bgformat : 0;
   const uint32_t compression = u32le(buf+30);
   const char* format = get_format_name(compression);
-  if(!format && !gformat_ascii)
+  if(!format && !fourcc_ascii)
     fprintf(stderr, "warning: unknown format, if gformat code, should be ascii letters!\n");
 
   const uint32_t image_size = u32le(buf+34);
@@ -150,22 +150,22 @@ int main(int argc, char* argv[]){
   const uint32_t used_indeces = u32le(buf+46);
   const uint32_t important_indeces = u32le(buf+50);
 
+  const char* gformat = 0;
+  const char* fformat = 0;
   size_t stride = 0;
   size_t image_data_size = image_size;
   if(!compression){
     stride = ((size_t)width * bits_per_pixel + 31)/32*4;
     image_data_size = stride * height;
     switch(bits_per_pixel){
-      case 32: gformat="BGRx"; break;
-      case 24: gformat="BGR"; break;
-      case 15: gformat="BGR15"; break;
-      case 16: gformat="BGR16"; break;
-      case  8: gformat="BGR8"; break;
+      case 32: fourcc="BGRX"; fformat="bgra"    ; gformat="BGRx" ; break;
+      case 24: fourcc="BR24"; fformat="bgr24"   ; gformat="BGR"  ; break;
+      case 16: fourcc="BR16"; fformat="rgb565le"; gformat="BGR16"; break;
+      case 15: fourcc="BGR5"; fformat="rgb555le"; gformat="BGR15"; break;
+      case  8: fourcc="BGR8"; fformat="bgr8"    ; gformat="BGR8" ; break;
       default: fprintf(stderr, "Strange bits per pixel value\n"); break;
     }
   }
-  if(!gformat && gformat_ascii)
-    gformat = bgformat;
 
   if(image_size && image_size != image_data_size){
     fprintf(stderr, "warning: broken bitmap: specified image data size seams wrong!\n");
@@ -213,8 +213,11 @@ int main(int argc, char* argv[]){
 
 #define X(P,F,N) printf("%s_%s=" F "\n", #P, #N, N);
   FIELDS
-  if(stride) printf("cmp_stride=%zu\n", stride);
+  if(stride ) printf("cmp_stride=%zu\n", stride);
+  if(format ) printf("cmp_format=%s\n" , format);
+  if(fformat) printf("cmp_fformat=%s\n", fformat);
   if(gformat) printf("cmp_gformat=%s\n", gformat);
+  if(fourcc ) printf("cmp_fourcc=%s\n" , fourcc);
 #undef X
 
   return ret;

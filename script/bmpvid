@@ -1,13 +1,24 @@
 #!/bin/bash
 set -e
 
-PATH="$(realpath "$(dirname "$0")/../bin/release/"):$PATH"
+if [ -z "$TYPE" ]
+  then TYPE=release
+fi
+export PATH="$(realpath "$(dirname "$0")/../bin/$TYPE/"):$PATH"
+
+ffmpeg=
+if [ "$1" == "--ffmpeg" ]
+  then ffmpeg=ffmpeg; shift
+fi
 
 command="$1"; shift
 pipeline="$1"
-if [ -z "$pipeline" ]
-  then pipeline="videoconvert ! autovideosink sync=false"
+
+if [ -z "$pipeline" ] && [ -z "$ffmpeg" ]
+then pipeline="videoconvert ! autovideosink sync=false"
 fi
+
+if [ -z "$FPS" ]; then FPS=60; fi
 
 (
   set -e
@@ -30,8 +41,11 @@ fi
   done
 ) | (
   export $(bmpinfo)
-  gst-launch-1.0 -q -e fdsrc \
-   ! rawvideoparse width="$hdr_width" height="$hdr_height" format="GST_VIDEO_FORMAT_$cmp_gformat" framerate=60/1 \
+  if [ "$ffmpeg" ]
+  then "$ffmpeg" -f rawvideo -video_size "$hdr_width"x"$hdr_height" -framerate "$FPS" -pix_fmt "$cmp_fformat" -i - -vf vflip $pipeline
+  else gst-launch-1.0 -q -e fdsrc \
+   ! rawvideoparse width="$hdr_width" height="$hdr_height" format="GST_VIDEO_FORMAT_$cmp_gformat" framerate="$FPS"/1 \
    ! videoflip method=vertical-flip \
    ! $pipeline
+  fi
 )

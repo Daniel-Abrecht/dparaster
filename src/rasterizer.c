@@ -66,7 +66,7 @@ static int PolySlice_cut(               // Returns the number of PolySlice secti
         result.x[0] = b->x[0];
         result.baryzentric[0] = b->baryzentric[0];
       }
-      if(a->x[1] < b->x[1]){
+      if(a->x[1] > b->x[1]){
         result.x[1] = a->x[1];
         result.baryzentric[1] = a->baryzentric[1];
       }else{

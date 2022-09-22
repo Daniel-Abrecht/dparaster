@@ -24,6 +24,7 @@ ifdef asan
 TYPE := $(TYPE)-asan
 CFLAGS  += -fsanitize=address
 LDFLAGS += -fsanitize=address
+dynamic=1
 endif
 
 export TYPE
@@ -63,7 +64,8 @@ get-lib:
 
 bin/$(TYPE)/%: build/$(TYPE)/o/src/main/%.c.o lib/$(TYPE)/lib$(SONAME).so
 	mkdir -p $(dir $@)
-	$(CC) -o $@ $(LDFLAGS) $(LDFLAGS_BIN) $< $(LDLIBS_BIN) $(LDLIBS)
+	$(CC) -o $@~ $(LDFLAGS) $(LDFLAGS_BIN) $< $(LDLIBS_BIN) $(LDLIBS)
+	mv $@~ $@
 
 lib/$(TYPE)/lib$(SONAME).so: lib/$(TYPE)/lib$(SONAME).a
 	ln -sf "lib$(SONAME).so" "$@.0"
@@ -105,6 +107,7 @@ speed ?= 50
 demo: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
+	LD_LIBRARY_PATH="$$PWD/lib/$(TYPE)/" \
 	./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$(echo "$$(date +%s.%N) * $(speed)" | bc -l) -'
 
 demo-video: \
@@ -115,14 +118,17 @@ demo-video: \
 bin/$(TYPE)/cube.webm: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
+	LD_LIBRARY_PATH="$$PWD/lib/$(TYPE)/" \
 	COUNT=360 ./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$i -' 'videoconvert ! vp9enc ! webmmux ! filesink location=$@'
 
 bin/$(TYPE)/cube.mp4: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
+	LD_LIBRARY_PATH="$$PWD/lib/$(TYPE)/" \
 	COUNT=360 ./script/bmpvid 'bin/$(TYPE)/rasterizer -y $$i -' 'videoconvert ! x264enc ! mp4mux ! filesink location=$@'
 
 bin/$(TYPE)/cube.png: \
   bin/$(TYPE)/rasterizer \
   bin/$(TYPE)/bmpinfo
+	LD_LIBRARY_PATH="$$PWD/lib/$(TYPE)/" \
 	COUNT=360 ./script/bmpvid --ffmpeg 'bin/$(TYPE)/rasterizer -y $$i -' '-y -f apng -plays 0 $@'

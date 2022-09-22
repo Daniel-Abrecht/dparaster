@@ -49,7 +49,7 @@ int main(int argc, char* argv[]){
   const struct params p = parse_args(argc, argv);
 
   // Where do we place the light?
-  Vector light = {{1,-1,-1}};
+  Vector light = {{1,-1,-1, 1}};
 
   // We rotate the world
   Matrix m_view = indentity_matrix;
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
   // Draw image
   {
     Matrix m_model = scale(0.5); // We scale down our cube
-    Geometry yellow_box = geometry_with_flat_color(&box, (Vector){{1,1,0}});
+    Geometry yellow_box = geometry_with_flat_color(&box, (Vector){{1,1,0,1}});
     draw(p.w,p.h,image,depth, &shader_default, &(Uniform){
       .modelview = mmulm(m_view, m_model),
       .light = light, // This places the light relative to the camera

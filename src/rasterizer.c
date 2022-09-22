@@ -137,8 +137,8 @@ void draw_triangle(
       .x[0] = triangle->vertex[a].data[0],
       .x[1] = triangle->vertex[a].data[0],
       .baryzentric = {
-        {{1,0,0}},
-        {{1,0,0}},
+        {{1,0,0,0}},
+        {{1,0,0,0}},
       },
     };
 
@@ -149,13 +149,13 @@ void draw_triangle(
     if(bx2 < triangle->vertex[b].data[0]){
       bslice.x[1] = triangle->vertex[b].data[0];
       bslice.x[0] = bx2;
-      bslice.baryzentric[1] = (Vector){{0,1,0}};
-      bslice.baryzentric[0] = (Vector){{1.-bct,0,bct}};
+      bslice.baryzentric[1] = (Vector){{0,1,0,0}};
+      bslice.baryzentric[0] = (Vector){{1.-bct,0,bct,0}};
     }else{
       bslice.x[0] = triangle->vertex[b].data[0];
       bslice.x[1] = bx2;
-      bslice.baryzentric[0] = (Vector){{0,1,0}};
-      bslice.baryzentric[1] = (Vector){{1.-bct,0,bct}};
+      bslice.baryzentric[0] = (Vector){{0,1,0,0}};
+      bslice.baryzentric[1] = (Vector){{1.-bct,0,bct,0}};
     }
 
     PolySlice cslice = {
@@ -163,8 +163,8 @@ void draw_triangle(
       .x[0] = triangle->vertex[c].data[0],
       .x[1] = triangle->vertex[c].data[0],
       .baryzentric = {
-        {{0,0,1}},
-        {{0,0,1}},
+        {{0,0,1,0}},
+        {{0,0,1,0}},
       },
     };
 
@@ -246,7 +246,7 @@ void draw(
       if(attribute.index){
         const unsigned*restrict indeces = attribute.index[i];
         for(unsigned k=0; k<3; k++)
-          triangle_in[j].vertex[k] = attribute.vertex ? attribute.vertex[indeces[k]] : (Vector){{0}};
+          triangle_in[j].vertex[k] = attribute.vertex ? attribute.vertex[indeces[k]] : (Vector){{0,0,0,1}};
       }else{
         for(unsigned k=0; k<3; k++)
           triangle_in[j].vertex[k] = attribute.vertex_default;

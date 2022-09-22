@@ -56,10 +56,6 @@ static inline Vector mmulv(Matrix m, Vector v){
 }
 
 static inline Vector vcross(Vector a, Vector b){
-  // Cross product isn't defined for 2 4 component vectors.
-  // So here, we project it to 3d.
-//  a = vdivf(a, a.data[3]);
-//  b = vdivf(b, b.data[3]);
   return (Vector){{
     a.data[1]*b.data[2] - a.data[2]*b.data[1],
     a.data[2]*b.data[0] - a.data[0]*b.data[2],

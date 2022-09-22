@@ -21,7 +21,6 @@ void shader_default_triangle(const Uniform*restrict uniform, Triangle out[restri
 }
 
 void shader_default_vertex(const Uniform*restrict uniform, Vector out[AOUT_COUNT], const Vector in[AIN_COUNT]){
-  UNUSED(uniform);
   out[AOUT_POSITION] = mmulv(uniform->modelview, in[AIN_POSITION]);
   out[AOUT_NORMAL] = mmulv(uniform->modelview, out[AOUT_NORMAL]);
   out[AOUT_COLOR] = in[AIN_COLOR];

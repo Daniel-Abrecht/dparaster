@@ -1,7 +1,9 @@
 #include <dparaster/geometry.h>
 
 const Geometry box = {
+  .triangle_count = 12,
   .attribute = {
+
     [AIN_POSITION] = {
       .vertex = (const Vector[]){
         {{-1,-1,-1, 1}}, {{ 1,-1,-1, 1}}, {{-1, 1,-1, 1}}, {{ 1, 1,-1, 1}},
@@ -16,6 +18,7 @@ const Geometry box = {
         {3,5,1},  {3,7,5}, // Right
       },
     },
+//
     [AIN_COLOR] = {
       .vertex = (const Vector[]){
         {{1,0,0,1}}, {{0,1,0,1}}, {{0,0,1,1}},
@@ -43,6 +46,21 @@ const Geometry box = {
       }
 
     },
+
+    [AIN_TEXCOORD] = {
+      .vertex = (const Vector[]){
+        {{0,0}}, {{0,1}},
+        {{1,0}}, {{1,1}},
+      },
+      .index = (const unsigned[][3]){
+        {1,0,2},  {1,2,3}, // Front
+        {1,0,2},  {1,2,3}, // Bottom
+        {2,3,1},  {2,1,0}, // Back
+        {1,0,2},  {1,2,3}, // Top
+        {3,0,2},  {3,1,0}, // Left
+        {0,3,1},  {0,2,3}, // Right
+      }
+    }
+
   },
-  .triangle_count = 12
 };

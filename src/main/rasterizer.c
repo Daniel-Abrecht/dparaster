@@ -1,6 +1,7 @@
 #include <dparaster/model.h>
-#include <dparaster/rasterizer.h>
 #include <dparaster/bitmap.h>
+#include <dparaster/texture.h>
+#include <dparaster/rasterizer.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -69,6 +70,8 @@ int main(int argc, char* argv[]){
     for(uint32_t x=0; x<p.w; x++)
       depth[y][x] = INFINITY;
 
+  struct texture* logo = texture_load("assets/logo.bmp");
+
   // Draw image
   {
     Matrix m_model = scale(0.5); // We scale down our cube
@@ -77,8 +80,11 @@ int main(int argc, char* argv[]){
       .modelview = mmulm(m_view, m_model),
       .light = light, // This places the light relative to the camera
 //      .light = mmulv(m_view, light), // This places it in the world (so it's rotated with it and so on
+      .tex = logo,
     }, &yellow_box);
   }
+
+  texture_free(logo);
 
   if(!bitmap_save(p.file, p.w,p.h,image))
     ret = 1;

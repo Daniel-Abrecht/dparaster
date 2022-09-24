@@ -1,4 +1,5 @@
 #include <dparaster/shader.h>
+#include <dparaster/texture.h>
 
 #define UNUSED(X) (void)(X)
 
@@ -6,6 +7,7 @@ enum e_attribute_out {
   AOUT_POSITION,
   AOUT_NORMAL,
   AOUT_COLOR,
+  AOUT_TEXCOORD,
   AOUT_COUNT,
 };
 
@@ -24,15 +26,18 @@ void shader_default_vertex(const Uniform*restrict uniform, Vector out[AOUT_COUNT
   out[AOUT_POSITION] = mmulv(uniform->modelview, in[AIN_POSITION]);
   out[AOUT_NORMAL] = mmulv(uniform->modelview, out[AOUT_NORMAL]);
   out[AOUT_COLOR] = in[AIN_COLOR];
+  out[AOUT_TEXCOORD] = in[AIN_TEXCOORD];
 }
 
 Vector shader_default_fragment(const Uniform*restrict uniform, double*restrict depth, Vector varying[restrict AOUT_COUNT]){
   UNUSED(depth);
   float ambient_strength = 0.2;
+  Vector tex_color = texture_lookup(uniform->tex, varying[AOUT_TEXCOORD].data, (enum texture_lookup_mode[]){TL_REPEAT,TL_REPEAT,TL_REPEAT});
+  Vector base_color = vmul(varying[AOUT_COLOR], tex_color);
   Vector normal = vnormalize(varying[AOUT_NORMAL]);
-  Vector ambient_color = vmulf(varying[AOUT_COLOR], ambient_strength);
+  Vector ambient_color = vmulf(base_color, ambient_strength);
   Vector light_direction = vnormalize(vsub(uniform->light, varying[AOUT_POSITION]));
-  Vector diffuse_color = vmulf(varying[AOUT_COLOR], fmax(vdot(normal, light_direction), 0.0));
+  Vector diffuse_color = vmulf(base_color, fmax(vdot(normal, light_direction), 0.0));
   Vector color = vadd(ambient_color, diffuse_color);
   return color;
 }

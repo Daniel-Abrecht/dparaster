@@ -6,15 +6,13 @@
 enum e_attribute_in {
   AIN_POSITION,
   AIN_COLOR,
+  AIN_TEXCOORD,
   AIN_COUNT,
 };
 
 typedef struct Attribute {
-  union {
-    const Vector *vertex;
-    // If there is no index, this will be the default for all vertices
-    Vector vertex_default;
-  };
+  const Vector *vertex;
+  Vector vertex_default; // If vertex is not set, this will be the default for all vertices
   const unsigned (*index)[3];
 } Attribute;
 

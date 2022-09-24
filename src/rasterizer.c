@@ -243,8 +243,8 @@ void draw(
     Triangle triangle_in[AIN_COUNT] = {0};
     for(enum e_attribute_in j=0; j<AIN_COUNT; j++){
       const Attribute attribute = geometry->attribute[j];
-      if(attribute.index){
-        const unsigned*restrict indeces = attribute.index[i];
+      if(attribute.vertex){
+        const unsigned*restrict indeces = attribute.index ? attribute.index[i] : (unsigned[]){i*3+0,i*3+1,i*3+2};
         for(unsigned k=0; k<3; k++)
           triangle_in[j].vertex[k] = attribute.vertex ? attribute.vertex[indeces[k]] : (Vector){{0,0,0,1}};
       }else{

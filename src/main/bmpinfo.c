@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <dparaster/utils.h>
+#include <dparaster/bitmap.h>
 
 static int nointr_read_minmax(uint8_t buf[], unsigned min, unsigned max){
   unsigned i = 0;
@@ -22,41 +24,6 @@ static int nointr_read_minmax(uint8_t buf[], unsigned min, unsigned max){
     i += res;
   }
   return i;
-}
-
-static uint32_t u16le(const uint8_t x[2]){
-  return (uint32_t)x[0] | x[1]<<8;
-}
-
-static uint32_t u32le(const uint8_t x[4]){
-  return (uint32_t)x[0] | x[1]<<8 | x[2]<<16 | x[3]<<24;
-}
-
-#define BMP_COMPRESSION \
-   X(RAW      ,  0) \
-   X(RLE8     ,  1) \
-   X(RLE4     ,  2) \
-   X(BITFIELDS,  3) \
-   X(JPEG     ,  4) \
-   X(PNG      ,  5) \
-   X(CMYK     , 11) \
-   X(CMYKRLE8 , 12) \
-   X(CMYKRLE4 , 13)
-
-enum BMP_compression {
-#define X(N,C) BMP_C_ ## N = C,
-BMP_COMPRESSION
-#undef X
-  BMP_COMPRESSION_COUNT
-};
-
-const char* get_format_name(uint32_t c){
-  switch(c){
-#define X(N,C) case BMP_C_ ## N: return #N;
-BMP_COMPRESSION
-#undef X
-  }
-  return 0;
 }
 
 int writeall(unsigned i, const uint8_t buf[i]){
@@ -93,92 +60,12 @@ int main(int argc, char* argv[]){
     return 2;
   }
 
-  if(buf[0] != 'B' || buf[1] != 'M'){
-    fprintf(stderr,"warning: broken bitmap: expected header to start with 'BM'\n");
+  struct bmpinfo info = {0};
+  if(!bitmap_header_parse(&info, buf))
     ret = 3;
-  }
 
-  const uint32_t file_size = u32le(buf+2);
-  if(file_size < 52){
-    fprintf(stderr,"warning: broken bitmap: specified file_size impossibly small\n");
-    ret = 3;
-  }
-
-  if(u32le(buf+6))
-    fprintf(stderr,"warning: reserved fields set\n");
-
-  const uint32_t data_offset = u32le(buf+10);
-  if(data_offset >= file_size){
-    fprintf(stderr,"warning: broken bitmap: data_offset >= file_size\n");
-    ret = 3;
-  }
-
-  const uint32_t bitmap_info_header_size = u32le(buf+14);
-  if(bitmap_info_header_size + 14 > data_offset){
-    fprintf(stderr,"warning: broken bitmap: bitmap header and image data overlap\n");
-    ret = 3;
-  }
-  if(bitmap_info_header_size < 38){
-    fprintf(stderr,"warning: broken bitmap: bitmap header specified to be smaller than possible\n");
-    ret = 3;
-  }
-
-  const uint32_t width = u32le(buf+18);
-  const uint32_t height = u32le(buf+22);
-
-  const uint16_t plane_count = u16le(buf+26);
-  const uint16_t bits_per_pixel = u16le(buf+28);
-  if(plane_count != 1){
-    fprintf(stderr, "warning: broken bitmap: plane count of a bitmap must be 1\n");
-    ret = 3;
-  }
-
-  const char bgformat[5] = { buf[30], buf[31], buf[32], buf[33], 0 };
-  bool fourcc_ascii = bgformat[0] >= 0x20 && bgformat[0] < 127
-                   && bgformat[1] >= 0x20 && bgformat[1] < 127
-                   && bgformat[2] >= 0x20 && bgformat[2] < 127
-                   && bgformat[3] >= 0x20 && bgformat[3] < 127;
-  const char* fourcc = fourcc_ascii ? bgformat : 0;
-  const uint32_t compression = u32le(buf+30);
-  const char* format = get_format_name(compression);
-  if(!format && !fourcc_ascii)
-    fprintf(stderr, "warning: unknown format, if gformat code, should be ascii letters!\n");
-
-  const uint32_t image_size = u32le(buf+34);
-  const uint32_t pixels_per_meter_x = u32le(buf+38);
-  const uint32_t pixels_per_meter_y = u32le(buf+42);
-  const uint32_t used_indeces = u32le(buf+46);
-  const uint32_t important_indeces = u32le(buf+50);
-
-  const char* gformat = 0;
-  const char* fformat = 0;
-  size_t stride = 0;
-  size_t image_data_size = image_size;
-  if(!compression){
-    stride = ((size_t)width * bits_per_pixel + 31)/32*4;
-    image_data_size = stride * height;
-    switch(bits_per_pixel){
-      case 32: fourcc="BGRX"; fformat="bgra"    ; gformat="BGRx" ; break;
-      case 24: fourcc="BR24"; fformat="bgr24"   ; gformat="BGR"  ; break;
-      case 16: fourcc="BR16"; fformat="rgb565le"; gformat="BGR16"; break;
-      case 15: fourcc="BGR5"; fformat="rgb555le"; gformat="BGR15"; break;
-      case  8: fourcc="BGR8"; fformat="bgr8"    ; gformat="BGR8" ; break;
-      default: fprintf(stderr, "Strange bits per pixel value\n"); break;
-    }
-  }
-
-  if(image_size && image_size != image_data_size){
-    fprintf(stderr, "warning: broken bitmap: specified image data size seams wrong!\n");
-    ret = 3;
-  }
-
-  if((uint64_t)image_data_size + data_offset > file_size){
-    fprintf(stderr, "warning: broken bitmap: specified file size too small for all the image data!\n");
-    ret = 3;
-  }
-
-  while((size_t)i < data_offset){
-    int ret = read(0, buf, data_offset-i < sizeof(buf) ? data_offset-i : sizeof(buf));
+  while((size_t)i < info.data_offset){
+    int ret = read(0, buf, info.data_offset-i < sizeof(buf) ? info.data_offset-i : sizeof(buf));
     if(ret == -1 && errno == EINTR)
       continue;
     if(ret == -1){
@@ -201,8 +88,8 @@ int main(int argc, char* argv[]){
   X(hdr,"%"PRIu32,bitmap_info_header_size) \
   X(hdr,"%"PRIu32,width) \
   X(hdr,"%"PRIu32,height) \
-  X(hdr,"%"PRIu32,plane_count) \
-  X(hdr,"%"PRIu32,bits_per_pixel) \
+  X(hdr,"%"PRIu16,plane_count) \
+  X(hdr,"%"PRIu16,bits_per_pixel) \
   X(hdr,"%"PRIu32,compression) \
   X(hdr,"%"PRIu32,image_size) \
   X(hdr,"%"PRIu32,pixels_per_meter_x) \
@@ -211,13 +98,13 @@ int main(int argc, char* argv[]){
   X(hdr,"%"PRIu32,important_indeces) \
   X(cmp,"%zu",image_data_size)
 
-#define X(P,F,N) printf("%s_%s=" F "\n", #P, #N, N);
+#define X(P,F,N) printf("%s_%s=" F "\n", #P, #N, info.N);
   FIELDS
-  if(stride ) printf("cmp_stride=%zu\n", stride);
-  if(format ) printf("cmp_format=%s\n" , format);
-  if(fformat) printf("cmp_fformat=%s\n", fformat);
-  if(gformat) printf("cmp_gformat=%s\n", gformat);
-  if(fourcc ) printf("cmp_fourcc=%s\n" , fourcc);
+  if(info.stride ) printf("cmp_stride=%zu\n", info.stride);
+  if(info.format ) printf("cmp_format=%s\n" , info.format);
+  if(info.fformat) printf("cmp_fformat=%s\n", info.fformat);
+  if(info.gformat) printf("cmp_gformat=%s\n", info.gformat);
+  if(info.fourcc ) printf("cmp_fourcc=%s\n" , info.fourcc);
 #undef X
 
   return ret;

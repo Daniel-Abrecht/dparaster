@@ -6,6 +6,7 @@
 typedef struct Uniform {
   Matrix modelview;
   Vector light;
+  const struct texture* tex;
 } Uniform;
 
 typedef void shader_triangle(const Uniform*restrict uniform, Triangle out[restrict], const Triangle in[restrict AIN_COUNT]); // Not something found in regular pipelines, but useful for per-triangle stuff

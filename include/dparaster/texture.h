@@ -14,6 +14,7 @@ struct texture {
   uint8_t dimension_count;
   size_t size[3];
   size_t stride[3];
+  bool flip[3];
   const void* img;
 };
 
@@ -25,8 +26,8 @@ enum texture_lookup_mode {
 struct texture* texture_load(const char* texture);
 void texture_free(struct texture* texture);
 
-void texture_texel_get_raw(const struct texture* texture, uint16_t result[], size_t coord[], enum texture_lookup_mode tlm[]);
-Vector texture_texel_get(const struct texture* texture, size_t coord[], enum texture_lookup_mode tlm[]);
+void texture_texel_get_raw(const struct texture* texture, uint16_t result[], long long coord[], enum texture_lookup_mode tlm[]);
+Vector texture_texel_get(const struct texture* texture, long long coord[], enum texture_lookup_mode tlm[]);
 Vector texture_lookup(const struct texture* texture, float coord[], enum texture_lookup_mode tlm[]);
 
 typedef bool texture_loader__can_handle(const struct texture* texture);

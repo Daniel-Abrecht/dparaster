@@ -170,6 +170,7 @@ bool tl_load(struct texture* texture){
   texture->size[0] = bmp.width;
   texture->size[1] = bmp.height;
   texture->stride[1] = bmp.stride;
+  texture->flip[1] = true;
   return true;
 }
 

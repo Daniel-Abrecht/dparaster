@@ -65,19 +65,26 @@ void texture_free(struct texture* texture){
   free(texture);
 }
 
-void texture_texel_get_raw(const struct texture* texture, uint16_t result[], size_t coord[], enum texture_lookup_mode tlm[]){
+void texture_texel_get_raw(const struct texture* texture, uint16_t result[], long long coord[], enum texture_lookup_mode tlm[]){
   size_t offset = 0;
   {
     size_t last_stride = strnlen(texture->format, 4);
     for(unsigned i=0; i<texture->dimension_count; i++){
-      size_t c = coord[i];
+      long long c = coord[i];
       switch(tlm[i]){
-        case TL_REPEAT: c = c % texture->size[i]; break;
+        case TL_REPEAT: {
+          c = c % texture->size[i];
+          if(c < 0)
+            c += texture->size[i];
+        } break;
         case TL_CLAMP: {
-          if(c >= texture->size[i])
+          if(c < 0) c = 0;
+          if((size_t)c >= texture->size[i])
             c = texture->size[i]-1;
         } break;
       }
+      if(texture->flip[i])
+        c = texture->size[i]-1 - c;
       offset += last_stride * c;
       size_t stride = texture->stride[i];
       if(!stride)
@@ -92,7 +99,7 @@ void texture_texel_get_raw(const struct texture* texture, uint16_t result[], siz
   }
 }
 
-Vector texture_texel_get(const struct texture* texture, size_t coord[], enum texture_lookup_mode tlm[]){
+Vector texture_texel_get(const struct texture* texture, long long coord[], enum texture_lookup_mode tlm[]){
   uint16_t channel[4] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF};
   texture_texel_get_raw(texture, channel, coord, tlm);
   Vector ret = {{1,1,1,1}};
@@ -109,7 +116,7 @@ Vector texture_texel_get(const struct texture* texture, size_t coord[], enum tex
 }
 
 Vector texture_lookup(const struct texture* texture, float coord[], enum texture_lookup_mode tlm[]){
-  size_t texcoord[texture->dimension_count];
+  long long texcoord[texture->dimension_count];
   for(size_t i=0,n=texture->dimension_count; i<n; i++)
     texcoord[i] = texture->size[i] * coord[i]; // Note: Discarding fraction, nearest approach
   return texture_texel_get(texture, texcoord, tlm);
